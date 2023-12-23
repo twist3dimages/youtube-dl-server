@@ -37,9 +37,10 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: user/myapp:latest  # Replace 'user/myapp' with your DockerHub username/repo
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ytdl-server:latest  # Replace with your preferred tag
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
+
 
       - name: Move cache
         run: |
