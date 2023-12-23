@@ -137,14 +137,14 @@ class JobsDB:
             INSERT INTO jobs
                 (name, status, log, format, type, url, pid)
             VALUES
-                (?, ?, ?, ?, ?, ?, ?);
+                (%s, %s, %s, %s, %s, %s, %s);
             """,
             (
                 job.name,
-                str(job.status),
+                job.status,
                 job.log,
                 job.format,
-                str(job.type),
+                job.type,
                 "\n".join(job.url),
                 job.pid,
             ),
@@ -152,15 +152,16 @@ class JobsDB:
         job.id = cursor.lastrowid
         self.conn.commit()
 
+
     def update_job(self, job):
         cursor = self.conn.cursor()
         cursor.execute(
             """
             UPDATE jobs
-            SET status = ?, log = ?, last_update = datetime() \
-            WHERE id = ?;
+            SET status = %s, log = %s, last_update = NOW()
+            WHERE id = %s;
             """,
-            (str(job.status), job.log, str(job.id)),
+            (job.status, job.log, job.id),
         )
         self.conn.commit()
 
@@ -169,8 +170,8 @@ class JobsDB:
         cursor.execute(
             """
             UPDATE jobs
-            SET status = ?, last_update = datetime() \
-            WHERE id = ?;
+            SET status = %s, last_update = datetime() \
+            WHERE id = %s;
             """,
             (str(status), str(job_id)),
         )
@@ -181,8 +182,8 @@ class JobsDB:
         cursor.execute(
             """
             UPDATE jobs
-            SET pid = ?, last_update = datetime() \
-            WHERE id = ?;
+            SET pid = %s, last_update = datetime() \
+            WHERE id = %s;
             """,
             (str(pid), str(job_id)),
         )
@@ -193,8 +194,8 @@ class JobsDB:
         cursor.execute(
             """
             UPDATE jobs
-            SET log = ?, last_update = datetime() \
-            WHERE id = ?;
+            SET log = %s, last_update = datetime() \
+            WHERE id = %s;
             """,
             (log, str(job_id)),
         )
@@ -205,8 +206,8 @@ class JobsDB:
         cursor.execute(
             """
             UPDATE jobs
-            SET name = ?, last_update = datetime() \
-            WHERE id = ?;
+            SET name = %s, last_update = datetime() \
+            WHERE id = %s;
             """,
             (name, str(job_id)),
         )
@@ -221,7 +222,7 @@ class JobsDB:
     def delete_job(self, job_id):
         cursor = self.conn.cursor()
         cursor.execute(
-            "DELETE FROM jobs WHERE id = ? AND ( status = ? OR status = ? );",
+            "DELETE FROM jobs WHERE id = %s AND ( status = %s OR status = %s );",
             (str(job_id), Job.ABORTED, Job.FAILED),
         )
         self.conn.commit()
@@ -255,7 +256,7 @@ class JobsDB:
                 id, name, status, log, last_update, format, type, url, pid
             FROM
                 jobs
-            WHERE id = ?;
+            WHERE id = %s;
             """,
             (job_id,),
         )
