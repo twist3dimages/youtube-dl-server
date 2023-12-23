@@ -130,7 +130,31 @@ class JobsDB:
     def close(self):
         self.conn.close()
 
+    # def insert_job(self, job):
+    #     cursor = self.conn.cursor()
+    #     cursor.execute(
+    #         """
+    #         INSERT INTO jobs
+    #             (name, status, log, format, type, url, pid)
+    #         VALUES
+    #             (%s, %s, %s, %s, %s, %s, %s);
+    #         """,
+    #         (
+    #             job.name,
+    #             job.status,
+    #             job.log,
+    #             job.format,
+    #             job.type,
+    #             "\n".join(job.url),
+    #             job.pid,
+    #         ),
+    #     )
+    #     job.id = cursor.lastrowid
+    #     self.conn.commit()
     def insert_job(self, job):
+        # Filter out log lines containing "0x154f6a7ff680"
+        job.log = '\n'.join(line for line in job.log.split('\n') if "0x154f6a7ff680" not in line)
+
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -152,8 +176,21 @@ class JobsDB:
         job.id = cursor.lastrowid
         self.conn.commit()
 
-
+    # def update_job(self, job):
+    #     cursor = self.conn.cursor()
+    #     cursor.execute(
+    #         """
+    #         UPDATE jobs
+    #         SET status = %s, log = %s, last_update = NOW()
+    #         WHERE id = %s;
+    #         """,
+    #         (job.status, job.log, job.id),
+    #     )
+    #     self.conn.commit()
     def update_job(self, job):
+        # Filter out log lines containing "0x154f6a7ff680"
+        job.log = '\n'.join(line for line in job.log.split('\n') if "0x154f6a7ff680" not in line)
+
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -164,7 +201,6 @@ class JobsDB:
             (job.status, job.log, job.id),
         )
         self.conn.commit()
-
     def set_job_status(self, job_id, status):
         cursor = self.conn.cursor()
         cursor.execute(
@@ -189,9 +225,21 @@ class JobsDB:
             (str(pid), str(job_id)),
         )
         self.conn.commit()
+    # def set_job_log(self, job_id, log):
+    #     truncated_log = log[-2500:] if len(log) > 2500 else log
+    #     cursor = self.conn.cursor()
+    #     cursor.execute(
+    #         """
+    #         UPDATE jobs
+    #         SET log = %s, last_update = NOW()
+    #         WHERE id = %s;
+    #         """,
+    #         (truncated_log, job_id),
+    #     )
+    #     self.conn.commit()
 
     def set_job_log(self, job_id, log):
-        truncated_log = log[-2500:] if len(log) > 2500 else log
+
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -199,7 +247,7 @@ class JobsDB:
             SET log = %s, last_update = NOW()
             WHERE id = %s;
             """,
-            (truncated_log, job_id),
+            (job_id),
         )
         self.conn.commit()
 
