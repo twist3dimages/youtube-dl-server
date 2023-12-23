@@ -234,18 +234,18 @@ class JobsDB:
             SELECT last_update
             FROM jobs
             ORDER BY last_update DESC
-            LIMIT ?;
+            LIMIT %s;
             """,
-            (str(limit),),
+            (limit,)  # No need to convert limit to string
         )
         rows = list(cursor.fetchall())
         if len(rows) > 0:
             cursor.execute(
-                "DELETE FROM jobs WHERE last_update < ? AND status != ? and status != ?;",
+                "DELETE FROM jobs WHERE last_update < %s AND status != %s and status != %s;",
                 (rows[-1][0], Job.PENDING, Job.RUNNING),
             )
         self.conn.commit()
-        self.conn.execute("VACUUM")
+
 
     def get_job_by_id(self, job_id):
         cursor = self.conn.cursor()
@@ -332,9 +332,9 @@ def get_all(self, limit=50):
                 id, name, status, last_update, format, type, url, pid
             FROM
                 jobs
-            ORDER BY last_update DESC LIMIT ?;
+            ORDER BY last_update DESC LIMIT %s;
             """,
-            (str(limit),),
+            (limit,)  # No need to convert limit to string
         )
         rows = []
         for (
