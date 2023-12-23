@@ -113,14 +113,19 @@ class JobsDB:
         return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
     def __init__(self, readonly=True):
-        self.conn = sqlite3.connect(
-            "file://%s%s"
-            % (
-                app_config["ydl_server"].get("metadata_db_path"),
-                "?mode=ro" if readonly else "",
-            ),
-            uri=True,
+        self.readonly = readonly
+        self.conn = mysql.connector.connect(
+            host=os.environ.get('DB_HOST', 'localhost'),
+            port=os.environ.get('DB_PORT', 3306),
+            database=os.environ.get('DB_NAME', 'your_database_name'),
+            user=os.environ.get('DB_USER', 'your_database_user'),
+            password=os.environ.get('DB_PASSWORD', 'your_database_password')
         )
+        if readonly:
+            self.conn.autocommit = False
+        else:
+            self.conn.autocommit = True
+
 
     def close(self):
         self.conn.close()
