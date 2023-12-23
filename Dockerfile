@@ -55,9 +55,9 @@ ENV YDL_CONFIG_PATH='/app_config'
 ENV DB_TYPE=sqlite
 ENV DB_HOST=localhost
 ENV DB_PORT=3306
-ENV DB_NAME=your_database_name
-ENV DB_USER=your_database_user
-ENV DB_PASSWORD=your_database_password
+ENV DB_NAME=database_name
+ENV DB_USER=database_username
+ENV DB_PASSWORD=database_password
 CMD [ "python", "-u", "./youtube-dl-server.py" ]
 
 HEALTHCHECK CMD wget 127.0.0.1:8080/api/info --spider -q
