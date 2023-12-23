@@ -183,7 +183,7 @@ class JobsDB:
         cursor.execute(
             """
             UPDATE jobs
-            SET pid = %s, last_update = datetime() \
+            SET pid = %s, last_update = NOW() \
             WHERE id = %s;
             """,
             (str(pid), str(job_id)),
@@ -195,7 +195,7 @@ class JobsDB:
         cursor.execute(
             """
             UPDATE jobs
-            SET log = %s, last_update = datetime() \
+            SET log = %s, last_update = NOW() \
             WHERE id = %s;
             """,
             (log, str(job_id)),
@@ -207,7 +207,7 @@ class JobsDB:
         cursor.execute(
             """
             UPDATE jobs
-            SET name = %s, last_update = datetime() \
+            SET name = %s, last_update = NOW() \
             WHERE id = %s;
             """,
             (name, str(job_id)),
