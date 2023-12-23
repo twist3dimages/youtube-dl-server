@@ -4,7 +4,7 @@
 # https://github.com/nbr23/youtube-dl-server
 #
 
-FROM --platform=$BUILDPLATFORM node:18-alpine as nodebuild
+FROM --platform=$BUILDPLATFORM node:21-alpine as nodebuild
 
 WORKDIR /app
 COPY ./front/package*.json /app
@@ -13,12 +13,12 @@ COPY ./front /app
 RUN npm run build
 
 
-FROM python:alpine3.17 as wheels
+FROM python:alpine3.18 as wheels
 
 RUN apk add --no-cache g++
 RUN pip install --upgrade --no-cache-dir pip && pip wheel --no-cache-dir --no-deps --wheel-dir /out/wheels brotli pycryptodomex websockets pyyaml
 
-FROM python:alpine3.17
+FROM python:alpine3.18
 ARG YOUTUBE_DL=youtube_dl
 ARG ATOMICPARSLEY=0
 ARG YDLS_VERSION
@@ -51,6 +51,12 @@ EXPOSE 8080
 
 ENV YOUTUBE_DL=$YOUTUBE_DL
 ENV YDL_CONFIG_PATH='/app_config'
+# Set default environment variables, can be overridden at runtime
+ENV DB_HOST=localhost
+ENV DB_PORT=3306
+ENV DB_NAME=your_database_name
+ENV DB_USER=your_database_user
+ENV DB_PASSWORD=your_database_password
 CMD [ "python", "-u", "./youtube-dl-server.py" ]
 
 HEALTHCHECK CMD wget 127.0.0.1:8080/api/info --spider -q

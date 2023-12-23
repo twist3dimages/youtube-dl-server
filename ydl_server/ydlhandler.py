@@ -28,11 +28,12 @@ def read_proc_stdout(proc, strio):
 
 
 class YdlHandler:
-
     def import_ydl_module(self):
         ydl_module = None
         if os.environ.get("YOUTUBE_DL").replace("-", "_") in YDL_MODULES:
-            ydl_module = importlib.import_module(os.environ.get("YOUTUBE_DL").replace("-", "_"))
+            ydl_module = importlib.import_module(
+                os.environ.get("YOUTUBE_DL").replace("-", "_")
+            )
         else:
             for module in YDL_MODULES:
                 try:
@@ -55,7 +56,9 @@ class YdlHandler:
         self.ydl_version = ydl_module.version.__version__
         self.ydl_extractors = [
             ie.IE_NAME
-            for ie in ydl_module.extractor.list_extractors(self.app_config["ydl_options"].get("age-limit"))
+            for ie in ydl_module.extractor.list_extractors(
+                self.app_config["ydl_options"].get("age-limit")
+            )
             if ie._WORKING
         ]
 
@@ -76,13 +79,14 @@ class YdlHandler:
         print("Using {} module".format(self.ydl_module_name))
 
     def start(self):
-        self.download_workers_count = self.app_config["ydl_server"].get("download_workers_count", 2)
+        self.download_workers_count = self.app_config["ydl_server"].get(
+            "download_workers_count", 2
+        )
         for i in range(self.download_workers_count):
             thread = Thread(target=self.worker, args=(i,))
             self.threads.append(thread)
             thread.start()
             print("Started dl worker %i" % i)
-
 
     def put(self, obj):
         self.queue.put(obj)
@@ -95,7 +99,7 @@ class YdlHandler:
         while not self.done:
             job = self.queue.get()
             job_detail = db.get_job_by_id(job.id)
-            if job_detail["status"] == "Aborted":
+            if not job_detail or job_detail["status"] == "Aborted":
                 self.queue.task_done()
                 continue
             job.status = Job.RUNNING
@@ -107,13 +111,33 @@ class YdlHandler:
                     self.download(job, {"format": job.format}, output)
                 except Exception as e:
                     job.status = Job.FAILED
-                    job.log = "Error during download task:\n{}:\n\t{}".format(type(e).__name__, str(e))
-                    print("Error during download task:\n{}:\n\t{}".format(type(e).__name__, str(e)))
+                    job.log = "Error during download task:\n{}:\n\t{}".format(
+                        type(e).__name__, str(e)
+                    )
+                    print(
+                        "Error during download task:\n{}:\n\t{}".format(
+                            type(e).__name__, str(e)
+                        )
+                    )
             self.jobshandler.put((Actions.UPDATE, job))
 
     def get_ydl_options(self, ydl_config, request_options):
         ydl_config = ydl_config.copy()
         req_format = request_options.get("format")
+
+        profile = None
+        if req_format.startswith("profile/"):
+            profile_name = "/".join(req_format.split("/")[1:])
+            profile = (
+                self.app_config.get("profiles", {})
+                .get(profile_name, {})
+                .get("ydl_options")
+            )
+            if not profile:
+                raise Exception("Unknown profile ", profile_name)
+            req_format = profile.get("format")
+            profile = {k: v for k, v in profile.items() if k != "format"}
+
         if req_format is None:
             req_format = "video/best"
         if req_format.startswith("audio/"):
@@ -125,6 +149,8 @@ class YdlHandler:
                 ydl_config.update({"format": req_format.split("/")[-1]})
         else:
             ydl_config.update({"format": req_format})
+        if profile:
+            ydl_config.update(profile)
         return ydl_config
 
     def download_log_update(self, job, proc, strio):
@@ -143,7 +169,7 @@ class YdlHandler:
         if proc.wait() != 0:
             return -1, stderr.decode()
 
-        return 0, json.loads(stdout)
+        return 0, [json.loads(s) for s in stdout.decode().strip().split("\n")]
 
     def get_ydl_full_cmd(self, opt_dict, url, extra_opts=None):
         cmd = [self.ydl_module_name]
@@ -157,32 +183,47 @@ class YdlHandler:
         if extra_opts is not None and isinstance(extra_opts, list):
             cmd.extend(extra_opts)
         cmd.append("--")
-        cmd.append(url)
+        cmd.extend(url)
         return cmd
 
     def download(self, job, request_options, output):
-        ydl_opts = self.get_ydl_options(self.app_config.get("ydl_options", {}), request_options)
+        ydl_opts = self.get_ydl_options(
+            self.app_config.get("ydl_options", {}), request_options
+        )
         cmd = self.get_ydl_full_cmd(ydl_opts, job.url)
 
         rc, metadata = self.fetch_metadata(job.url)
         if rc != 0:
             job.log = Job.clean_logs(metadata)
             job.status = Job.FAILED
+            print("Error in metadata fetching process:\n" + job.log)
             raise Exception(job.log)
 
-        self.jobshandler.put((Actions.SET_NAME, (job.id, metadata.get("title", job.url))))
+        title = ", ".join(
+            [md.get("title", job.url[i]) for i, md in enumerate(metadata)]
+        )
+        self.jobshandler.put((Actions.SET_NAME, (job.id, title)))
 
-        if metadata.get("_type") == "playlist":
-            ydl_opts.update({"output": self.app_config["ydl_server"].get("output_playlist", ydl_opts.get("output"))})
+        if metadata[0].get("_type") == "playlist" or len(metadata) > 1:
+            ydl_opts.update(
+                {
+                    "output": self.app_config["ydl_server"].get(
+                        "output_playlist", ydl_opts.get("output")
+                    )
+                }
+            )
 
         cmd = self.get_ydl_full_cmd(ydl_opts, job.url)
 
         proc = Popen(cmd, stdout=PIPE, stderr=STDOUT)
         self.jobshandler.put((Actions.SET_PID, (job.id, proc.pid)))
-        stdout_thread = Thread(target=self.download_log_update, args=(job, proc, output))
+        stdout_thread = Thread(
+            target=self.download_log_update, args=(job, proc, output)
+        )
         stdout_thread.start()
 
-        if proc.wait() == 0:
+        rc = proc.wait()
+        if rc == 0:
             read_proc_stdout(proc, output)
             job.log = Job.clean_logs(output.getvalue())
             job.status = Job.COMPLETED
@@ -190,13 +231,19 @@ class YdlHandler:
             read_proc_stdout(proc, output)
             job.log = Job.clean_logs(output.getvalue())
             job.status = Job.FAILED
-            print("Error during download task:\n" + output.getvalue())
+            print(
+                "Error in download process (RC=" + str(rc) + "):\n" + output.getvalue()
+            )
         stdout_thread.join()
 
     def resume_pending(self):
         db = JobsDB(readonly=False)
         jobs = db.get_all(self.app_config["ydl_server"].get("max_log_entries", 100))
-        not_endeds = [job for job in jobs if job["status"] == "Pending" or job["status"] == "Running"]
+        not_endeds = [
+            job
+            for job in jobs
+            if job["status"] == "Pending" or job["status"] == "Running"
+        ]
         for pending in not_endeds:
             job = Job(
                 pending["name"],
@@ -204,7 +251,7 @@ class YdlHandler:
                 "Queue stopped",
                 int(pending["type"]),
                 pending["format"],
-                pending["url"],
+                pending["urls"],
             )
             job.id = pending["id"]
             self.jobshandler.put((Actions.RESUME, job))
