@@ -285,44 +285,44 @@ class JobsDB:
             "pid": pid,
         }
 
-    def get_all(self, limit=50):
-        cursor = self.conn.cursor()
-        cursor.execute(
-            """
-            SELECT
-                id, name, status, log, last_update, format, type, url, pid
-            FROM
-                jobs
-            ORDER BY last_update DESC LIMIT ?;
-            """,
-            (str(limit),),
+def get_all(self, limit=50):
+    cursor = self.conn.cursor()
+    cursor.execute(
+        """
+        SELECT
+            id, name, status, log, last_update, format, type, url, pid
+        FROM
+            jobs
+        ORDER BY last_update DESC LIMIT %s;
+        """,
+        (limit,)  # No need to convert limit to string
+    )
+    rows = []
+    for (
+        job_id,
+        name,
+        status,
+        log,
+        last_update,
+        format,
+        jobtype,
+        url,
+        pid,
+    ) in cursor.fetchall():
+        rows.append(
+            {
+                "id": job_id,
+                "name": name,
+                "status": STATUS_NAME[status],
+                "log": log,
+                "format": format,
+                "last_update": JobsDB.convert_datetime_to_tz(last_update),
+                "type": jobtype,
+                "urls": url.split("\n"),
+                "pid": pid,
+            }
         )
-        rows = []
-        for (
-            job_id,
-            name,
-            status,
-            log,
-            last_update,
-            format,
-            jobtype,
-            url,
-            pid,
-        ) in cursor.fetchall():
-            rows.append(
-                {
-                    "id": job_id,
-                    "name": name,
-                    "status": STATUS_NAME[status],
-                    "log": log,
-                    "format": format,
-                    "last_update": JobsDB.convert_datetime_to_tz(last_update),
-                    "type": jobtype,
-                    "urls": url.split("\n"),
-                    "pid": pid,
-                }
-            )
-        return rows
+    return rows
 
     def get_jobs(self, limit=50):
         cursor = self.conn.cursor()
