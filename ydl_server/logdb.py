@@ -191,16 +191,18 @@ class JobsDB:
         self.conn.commit()
 
     def set_job_log(self, job_id, log):
+        truncated_log = log[-2500:] if len(log) > 2500 else log
         cursor = self.conn.cursor()
         cursor.execute(
             """
             UPDATE jobs
-            SET log = %s, last_update = NOW() \
+            SET log = %s, last_update = NOW()
             WHERE id = %s;
             """,
-            (log, str(job_id)),
+            (truncated_log, job_id),
         )
         self.conn.commit()
+
 
     def set_job_name(self, job_id, name):
         cursor = self.conn.cursor()
