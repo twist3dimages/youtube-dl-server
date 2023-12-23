@@ -239,7 +239,7 @@ class JobsDB:
     #     self.conn.commit()
 
     def set_job_log(self, job_id, log):
-
+        #truncated_log = log[-2500:] if len(log) > 2500 else log
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -247,9 +247,10 @@ class JobsDB:
             SET log = %s, last_update = NOW()
             WHERE id = %s;
             """,
-            (job_id),
+            (job_id)  # Ensure this is a tuple
         )
         self.conn.commit()
+
 
 
     def set_job_name(self, job_id, name):
