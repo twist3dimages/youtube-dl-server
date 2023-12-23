@@ -1,12 +1,28 @@
-import sqlite3
+import mysql.connector
 import re
 import datetime
-
+import os
 from ydl_server.config import app_config
 
+# Constants
 STATUS_NAME = ["Running", "Completed", "Failed", "Pending", "Aborted"]
 
+# Database connection parameters from Docker environment variables
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_PORT = os.environ.get('DB_PORT', 3306)
+DB_NAME = os.environ.get('DB_NAME', 'your_database_name')
+DB_USER = os.environ.get('DB_USER', 'your_database_user')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_database_password')
 
+# MariaDB connection
+def get_db_connection():
+    return mysql.connector.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD
+    )
 class Actions:
     DOWNLOAD = 1
     PURGE_LOGS = 2
@@ -56,58 +72,42 @@ class Job:
         return clean
 
 
+
+# Updated JobsDB class for MariaDB
 class JobsDB:
     @staticmethod
     def check_db_latest():
-        conn = sqlite3.connect(
-            "file://%s" % app_config["ydl_server"].get("metadata_db_path"), uri=True
-        )
+        conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("PRAGMA table_info('jobs')")
-        columns = [row[1] for row in cursor.fetchall()]
-        if set(columns) != set(
-            [
-                "id",
-                "name",
-                "status",
-                "format",
-                "log",
-                "last_update",
-                "type",
-                "url",
-                "pid",
-            ]
-        ):
+        cursor.execute("SHOW TABLES LIKE 'jobs'")
+        if cursor.fetchone() is None:
             print("Outdated jobs table, cleaning up and recreating")
-            cursor.execute("DROP TABLE if exists jobs;")
+            cursor.execute("DROP TABLE IF EXISTS jobs;")
+            JobsDB.init_db()
         conn.close()
 
     @staticmethod
     def init_db():
-        conn = sqlite3.connect(
-            "file://%s" % app_config["ydl_server"].get("metadata_db_path"), uri=True
-        )
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             """
-            CREATE TABLE if not exists jobs
+            CREATE TABLE IF NOT EXISTS jobs
                 (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id INT AUTO_INCREMENT PRIMARY KEY,
                     name TEXT NOT NULL,
-                    status INTEGER NOT NULL,
+                    status INT NOT NULL,
                     log TEXT,
                     format TEXT,
                     last_update DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    type INTEGER NOT NULL,
+                    type INT NOT NULL,
                     url TEXT,
-                    pid INTEGER
+                    pid INT
                 );
             """
         )
         conn.commit()
         conn.close()
-
-    @staticmethod
     def convert_datetime_to_tz(dt):
         dt = datetime.datetime.strptime("{} +0000".format(dt), "%Y-%m-%d %H:%M:%S %z")
         return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
