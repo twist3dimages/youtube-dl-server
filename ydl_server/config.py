@@ -27,6 +27,14 @@ YDL_FORMATS = {
 }
 
 
+def get_ydl_formats(app_config):
+    if len(app_config.get("profiles", {}).keys()) > 0:
+        YDL_FORMATS["Profiles"] = {
+            f"profile/{k}": v.get("name") for k, v in app_config.get("profiles").items()
+        }
+    return YDL_FORMATS
+
+
 def copy_default_config(config_file_path):
     try:
         shutil.copy("./default_config.yml", config_file_path)
@@ -51,7 +59,11 @@ def load_config():
     print("Using configuration file {}".format(config_file_path))
 
     if not os.path.isfile(config_file_path):
-        print("{} does not exist, creating it from default values".format(config_file_path))
+        print(
+            "{} does not exist, creating it from default values".format(
+                config_file_path
+            )
+        )
         copy_default_config(config_file_path)
     with open(config_file_path) as configfile:
         config = yaml.load(configfile, Loader=yaml.SafeLoader)
