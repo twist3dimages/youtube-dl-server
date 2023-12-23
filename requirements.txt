@@ -6,3 +6,4 @@ python-multipart==0.0.6
 PyYAML==6.0.1
 youtube-dl==2021.12.17
 yt-dlp==2023.11.16
+mysql-connector-python

@@ -51,6 +51,12 @@ EXPOSE 8080
 
 ENV YOUTUBE_DL=$YOUTUBE_DL
 ENV YDL_CONFIG_PATH='/app_config'
+# Set default environment variables, can be overridden at runtime
+ENV DB_HOST=localhost
+ENV DB_PORT=3306
+ENV DB_NAME=your_database_name
+ENV DB_USER=your_database_user
+ENV DB_PASSWORD=your_database_password
 CMD [ "python", "-u", "./youtube-dl-server.py" ]
 
 HEALTHCHECK CMD wget 127.0.0.1:8080/api/info --spider -q
