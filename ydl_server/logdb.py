@@ -170,12 +170,13 @@ class JobsDB:
         cursor.execute(
             """
             UPDATE jobs
-            SET status = %s, last_update = datetime() \
+            SET status = %s, last_update = NOW()
             WHERE id = %s;
             """,
-            (str(status), str(job_id)),
+            (status, job_id),
         )
         self.conn.commit()
+
 
     def set_job_pid(self, job_id, pid):
         cursor = self.conn.cursor()
