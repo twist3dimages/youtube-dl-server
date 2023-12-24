@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'Dockerfile'
+      - '**/*.py'
   workflow_dispatch:
 
 jobs:
@@ -41,7 +44,6 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/ytdl-server:latest  # Uses Docker Hub username from secrets
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
-
 
       - name: Move cache
         if: steps.cache.outputs.cache-hit != 'true'
