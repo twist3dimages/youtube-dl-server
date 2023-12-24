@@ -3,7 +3,7 @@ name: Build Docker Image
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'Dockerfile'
       - '**/*.py'
@@ -41,9 +41,17 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ytdl-server:latest  # Uses Docker Hub username from secrets
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ytdl-server:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      # Example of saving state
+      - name: Save state
+        run: echo "state_name=state_value" >> $GITHUB_STATE
+
+      # Example of setting output
+      - name: Set output
+        run: echo "output_name=output_value" >> $GITHUB_OUTPUT
 
       - name: Move cache
         if: steps.cache.outputs.cache-hit != 'true'
