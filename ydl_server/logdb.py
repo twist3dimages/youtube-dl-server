@@ -745,10 +745,8 @@ class JobsDB:
             cursor = self.conn.cursor()
             cursor.execute(
                 """
-                SELECT
-                    id, name, status, log, last_update, format, type, url, pid
-                FROM
-                    jobs
+                SELECT id, name, status, log, format, last_update, type, url, pid
+                FROM jobs
                 WHERE id = %s;
                 """,
                 (job_id,)
@@ -756,20 +754,18 @@ class JobsDB:
             row = cursor.fetchone()
             if not row:
                 logging.info("No job found with job_id=%s", job_id)
-                return
-            job = {
+                return None
+            return {
                 "id": row[0],
                 "name": row[1],
                 "status": STATUS_NAME[row[2]],
                 "log": row[3],
                 "format": row[4],
-                "last_update": JobsDB.convert_datetime_to_tz(row[5]),
+                "last_update": self.convert_datetime_to_tz(row[5]),
                 "type": row[6],
-                "urls": row[7].split("\n"),
+                "urls": row[7].split("\n") if row[7] else [],
                 "pid": row[8],
             }
-            logging.info("Job retrieved: %s", job)
-            return job
         except Exception as e:
             logging.error("Error getting job by ID: %s", e)
             raise
