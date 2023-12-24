@@ -598,60 +598,60 @@ class JobsDB:
             logging.error("Error updating job: %s", e)
             raise
 
-        def set_job_status(self, job_id, status):
-            logging.info("Setting job status for job_id=%s", job_id)
-            try:
-                cursor = self.conn.cursor()
-                cursor.execute(
-                    """
-                    UPDATE jobs
-                    SET status = %s, last_update = NOW()
-                    WHERE id = %s;
-                    """,
-                    (status, job_id),
-                )
-                self.conn.commit()
-                logging.info("Job status updated for job_id=%s", job_id)
-            except Exception as e:
-                logging.error("Error setting job status: %s", e)
-                raise
-    
-        def set_job_pid(self, job_id, pid):
-            logging.info("Setting job PID for job_id=%s", job_id)
-            try:
-                cursor = self.conn.cursor()
-                cursor.execute(
-                    """
-                    UPDATE jobs
-                    SET pid = %s, last_update = NOW()
-                    WHERE id = %s;
-                    """,
-                    (pid, job_id),
-                )
-                self.conn.commit()
-                logging.info("Job PID set for job_id=%s", job_id)
-            except Exception as e:
-                logging.error("Error setting job PID: %s", e)
-                raise
-    
-        def set_job_log(self, job_id, log):
-            logging.info("Setting job log for job_id=%s", job_id)
-            try:
-                truncated_log = log[-2500:] if len(log) > 2500 else log
-                cursor = self.conn.cursor()
-                cursor.execute(
-                    """
-                    UPDATE jobs
-                    SET log = %s, last_update = NOW()
-                    WHERE id = %s;
-                    """,
-                    (truncated_log, job_id),
-                )
-                self.conn.commit()
-                logging.info("Job log set for job_id=%s", job_id)
-            except Exception as e:
-                logging.error("Error setting job log: %s", e)
-                raise
+    def set_job_status(self, job_id, status):
+        logging.info("Setting job status for job_id=%s", job_id)
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+                UPDATE jobs
+                SET status = %s, last_update = NOW()
+                WHERE id = %s;
+                """,
+                (status, job_id),
+            )
+            self.conn.commit()
+            logging.info("Job status updated for job_id=%s", job_id)
+        except Exception as e:
+            logging.error("Error setting job status: %s", e)
+            raise
+
+    def set_job_pid(self, job_id, pid):
+        logging.info("Setting job PID for job_id=%s", job_id)
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+                UPDATE jobs
+                SET pid = %s, last_update = NOW()
+                WHERE id = %s;
+                """,
+                (pid, job_id),
+            )
+            self.conn.commit()
+            logging.info("Job PID set for job_id=%s", job_id)
+        except Exception as e:
+            logging.error("Error setting job PID: %s", e)
+            raise
+
+    def set_job_log(self, job_id, log):
+        logging.info("Setting job log for job_id=%s", job_id)
+        try:
+            truncated_log = log[-2500:] if len(log) > 2500 else log
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+                UPDATE jobs
+                SET log = %s, last_update = NOW()
+                WHERE id = %s;
+                """,
+                (truncated_log, job_id),
+            )
+            self.conn.commit()
+            logging.info("Job log set for job_id=%s", job_id)
+        except Exception as e:
+            logging.error("Error setting job log: %s", e)
+            raise
     #    def set_job_log(self, job_id, log):
     ##        cursor = self.conn.cursor()
      #       cursor.execute(
