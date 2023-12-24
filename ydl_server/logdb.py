@@ -502,8 +502,16 @@ class JobsDB:
             JobsDB.init_db()
         conn.close()
     def convert_datetime_to_tz(dt):
-        dt = datetime.datetime.strptime("{} +0000".format(dt), "%Y-%m-%d %H:%M:%S %z")
-        return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            # Validate if the data is in the expected datetime format
+            datetime.datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
+            dt = datetime.datetime.strptime("{} +0000".format(dt), "%Y-%m-%d %H:%M:%S %z")
+            return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            logging.error("Invalid datetime format: %s", dt)
+            # Handle the error appropriately (e.g., return None or a default value)
+            return None
+
 
     @staticmethod
     def init_db():
