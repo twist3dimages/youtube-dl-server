@@ -501,6 +501,9 @@ class JobsDB:
             cursor.execute("DROP TABLE IF EXISTS jobs;")
             JobsDB.init_db()
         conn.close()
+    def convert_datetime_to_tz(dt):
+        dt = datetime.datetime.strptime("{} +0000".format(dt), "%Y-%m-%d %H:%M:%S %z")
+        return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
     def init_db():
