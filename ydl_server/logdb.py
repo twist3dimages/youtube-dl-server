@@ -501,16 +501,18 @@ class JobsDB:
             cursor.execute("DROP TABLE IF EXISTS jobs;")
             JobsDB.init_db()
         conn.close()
+    @staticmethod
     def convert_datetime_to_tz(dt):
+        # Check if the data is a valid datetime string
         try:
-            # Validate if the data is in the expected datetime format
             datetime.datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
             dt = datetime.datetime.strptime("{} +0000".format(dt), "%Y-%m-%d %H:%M:%S %z")
             return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
         except ValueError:
             logging.error("Invalid datetime format: %s", dt)
-            # Handle the error appropriately (e.g., return None or a default value)
+            # Return None or a default value if the format is not correct
             return None
+
 
 
     @staticmethod
