@@ -541,10 +541,9 @@ class JobsDB:
         except Exception as e:
             logging.error("Error closing database connection: %s", e)
             raise
-            def insert_job(self, job):
-            # Filter out log lines containing "0x154f6a7ff680"
-            job.log = '\n'.join(line for line in job.log.split('\n') if "0x154f6a7ff680" not in line)
-    
+    def insert_job(self, job):
+        logging.info("Inserting job: %s", job.name)
+        try:
             cursor = self.conn.cursor()
             cursor.execute(
                 """
@@ -565,22 +564,14 @@ class JobsDB:
             )
             job.id = cursor.lastrowid
             self.conn.commit()
-    
-        # def update_job(self, job):
-        #     cursor = self.conn.cursor()
-        #     cursor.execute(
-        #         """
-        #         UPDATE jobs
-        #         SET status = %s, log = %s, last_update = NOW()
-        #         WHERE id = %s;
-        #         """,
-        #         (job.status, job.log, job.id),
-        #     )
-        #     self.conn.commit()
-        def update_job(self, job):
-            # Filter out log lines containing "0x154f6a7ff680"
-            job.log = '\n'.join(line for line in job.log.split('\n') if "0x154f6a7ff680" not in line)
-    
+            logging.info("Job inserted with ID: %s", job.id)
+        except Exception as e:
+            logging.error("Error inserting job: %s", e)
+            raise
+
+    def update_job(self, job):
+        logging.info("Updating job: %s", job.id)
+        try:
             cursor = self.conn.cursor()
             cursor.execute(
                 """
@@ -591,42 +582,65 @@ class JobsDB:
                 (job.status, job.log, job.id),
             )
             self.conn.commit()
+            logging.info("Job updated: %s", job.id)
+        except Exception as e:
+            logging.error("Error updating job: %s", e)
+            raise
+
         def set_job_status(self, job_id, status):
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                UPDATE jobs
-                SET status = %s, last_update = NOW()
-                WHERE id = %s;
-                """,
-                (status, job_id),
-            )
-            self.conn.commit()
-    
+            logging.info("Setting job status for job_id=%s", job_id)
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    """
+                    UPDATE jobs
+                    SET status = %s, last_update = NOW()
+                    WHERE id = %s;
+                    """,
+                    (status, job_id),
+                )
+                self.conn.commit()
+                logging.info("Job status updated for job_id=%s", job_id)
+            except Exception as e:
+                logging.error("Error setting job status: %s", e)
+                raise
     
         def set_job_pid(self, job_id, pid):
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                UPDATE jobs
-                SET pid = %s, last_update = NOW() \
-                WHERE id = %s;
-                """,
-                (str(pid), str(job_id)),
-            )
-            self.conn.commit()
+            logging.info("Setting job PID for job_id=%s", job_id)
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    """
+                    UPDATE jobs
+                    SET pid = %s, last_update = NOW()
+                    WHERE id = %s;
+                    """,
+                    (pid, job_id),
+                )
+                self.conn.commit()
+                logging.info("Job PID set for job_id=%s", job_id)
+            except Exception as e:
+                logging.error("Error setting job PID: %s", e)
+                raise
+    
         def set_job_log(self, job_id, log):
-            truncated_log = log[-2500:] if len(log) > 2500 else log
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                UPDATE jobs
-                SET log = %s, last_update = NOW()
-                WHERE id = %s;
-                """,
-                (truncated_log, job_id),
-            )
-            self.conn.commit()
+            logging.info("Setting job log for job_id=%s", job_id)
+            try:
+                truncated_log = log[-2500:] if len(log) > 2500 else log
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    """
+                    UPDATE jobs
+                    SET log = %s, last_update = NOW()
+                    WHERE id = %s;
+                    """,
+                    (truncated_log, job_id),
+                )
+                self.conn.commit()
+                logging.info("Job log set for job_id=%s", job_id)
+            except Exception as e:
+                logging.error("Error setting job log: %s", e)
+                raise
     #    def set_job_log(self, job_id, log):
     ##        cursor = self.conn.cursor()
      #       cursor.execute(
@@ -643,163 +657,176 @@ class JobsDB:
     
     
         def set_job_name(self, job_id, name):
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                UPDATE jobs
-                SET name = %s, last_update = NOW() \
-                WHERE id = %s;
-                """,
-                (name, str(job_id)),
-            )
-            self.conn.commit()
+            logging.info("Setting job name for job_id=%s", job_id)
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    """
+                    UPDATE jobs
+                    SET name = %s, last_update = NOW()
+                    WHERE id = %s;
+                    """,
+                    (name, job_id),
+                )
+                self.conn.commit()
+                logging.info("Job name set for job_id=%s", job_id)
+            except Exception as e:
+                logging.error("Error setting job name: %s", e)
+                raise
     
         def purge_jobs(self):
-            cursor = self.conn.cursor()
-            cursor.execute("DELETE FROM jobs;")
-            self.conn.commit()
-            self.conn.execute("VACUUM")
+            logging.info("Purging all jobs")
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute("DELETE FROM jobs;")
+                self.conn.commit()
+                cursor.execute("VACUUM")
+                logging.info("All jobs purged")
+            except Exception as e:
+                logging.error("Error purging jobs: %s", e)
+                raise
     
         def delete_job(self, job_id):
-            cursor = self.conn.cursor()
-            cursor.execute(
-                "DELETE FROM jobs WHERE id = %s AND ( status = %s OR status = %s );",
-                (str(job_id), Job.ABORTED, Job.FAILED),
-            )
-            self.conn.commit()
-            self.conn.execute("VACUUM")
+            logging.info("Deleting job with job_id=%s", job_id)
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    "DELETE FROM jobs WHERE id = %s AND (status = %s OR status = %s);",
+                    (job_id, Job.ABORTED, Job.FAILED),
+                )
+                self.conn.commit()
+                cursor.execute("VACUUM")
+                logging.info("Job deleted with job_id=%s", job_id)
+            except Exception as e:
+                logging.error("Error deleting job: %s", e)
+                raise
     
         def clean_old_jobs(self, limit=10):
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                SELECT last_update
-                FROM jobs
-                ORDER BY last_update DESC
-                LIMIT %s;
-                """,
-                (limit,)  # No need to convert limit to string
-            )
-            rows = list(cursor.fetchall())
-            if len(rows) > 0:
+            logging.info("Cleaning old jobs, limit=%s", limit)
+            try:
+                cursor = self.conn.cursor()
                 cursor.execute(
-                    "DELETE FROM jobs WHERE last_update < %s AND status != %s and status != %s;",
-                    (rows[-1][0], Job.PENDING, Job.RUNNING),
+                    """
+                    SELECT last_update
+                    FROM jobs
+                    ORDER BY last_update DESC
+                    LIMIT %s;
+                    """,
+                    (limit,)
                 )
-            self.conn.commit()
-    
+                rows = list(cursor.fetchall())
+                if len(rows) > 0:
+                    cursor.execute(
+                        "DELETE FROM jobs WHERE last_update < %s AND status != %s and status != %s;",
+                        (rows[-1][0], Job.PENDING, Job.RUNNING),
+                    )
+                self.conn.commit()
+                logging.info("Old jobs cleaned")
+            except Exception as e:
+                logging.error("Error cleaning old jobs: %s", e)
+                raise
     
         def get_job_by_id(self, job_id):
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                SELECT
-                    id, name, status, log, last_update, format, type, url, pid
-                FROM
-                    jobs
-                WHERE id = %s;
-                """,
-                (job_id,),
-            )
-            row = cursor.fetchone()
-            if not row:
-                return
-            (
-                job_id,
-                name,
-                status,
-                log,
-                last_update,
-                format,
-                jobtype,
-                url,
-                pid,
-            ) = row
-            return {
-                "id": job_id,
-                "name": name,
-                "status": STATUS_NAME[status],
-                "log": log,
-                "format": format,
-                "last_update": JobsDB.convert_datetime_to_tz(last_update),
-                "type": jobtype,
-                "urls": url.split("\n"),
-                "pid": pid,
-            }
+            logging.info("Getting job by job_id=%s", job_id)
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    """
+                    SELECT
+                        id, name, status, log, last_update, format, type, url, pid
+                    FROM
+                        jobs
+                    WHERE id = %s;
+                    """,
+                    (job_id,)
+                )
+                row = cursor.fetchone()
+                if not row:
+                    logging.info("No job found with job_id=%s", job_id)
+                    return
+                job = {
+                    "id": row[0],
+                    "name": row[1],
+                    "status": STATUS_NAME[row[2]],
+                    "log": row[3],
+                    "format": row[4],
+                    "last_update": JobsDB.convert_datetime_to_tz(row[5]),
+                    "type": row[6],
+                    "urls": row[7].split("\n"),
+                    "pid": row[8],
+                }
+                logging.info("Job retrieved: %s", job)
+                return job
+            except Exception as e:
+                logging.error("Error getting job by ID: %s", e)
+                raise
     
         def get_all(self, limit=50):
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                SELECT
-                    id, name, status, log, last_update, format, type, url, pid
-                FROM
-                    jobs
-                ORDER BY last_update DESC LIMIT %s;
-                """,
-                (limit,)  # No need to convert limit to string
-            )
-            rows = []
-            for (
-                job_id,
-                name,
-                status,
-                log,
-                last_update,
-                format,
-                jobtype,
-                url,
-                pid,
-            ) in cursor.fetchall():
-                rows.append(
-                    {
-                        "id": job_id,
-                        "name": name,
-                        "status": STATUS_NAME[status],
-                        "log": log,
-                        "format": format,
-                        "last_update": JobsDB.convert_datetime_to_tz(last_update),
-                        "type": jobtype,
-                        "urls": url.split("\n"),
-                        "pid": pid,
-                    }
+            logging.info("Getting all jobs, limit=%s", limit)
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    """
+                    SELECT
+                        id, name, status, log, last_update, format, type, url, pid
+                    FROM
+                        jobs
+                    ORDER BY last_update DESC LIMIT %s;
+                    """,
+                    (limit,)
                 )
-            return rows
+                rows = cursor.fetchall()
+                jobs = [
+                    {
+                        "id": row[0],
+                        "name": row[1],
+                        "status": STATUS_NAME[row[2]],
+                        "log": row[3],
+                        "format": row[4],
+                        "last_update": JobsDB.convert_datetime_to_tz(row[5]),
+                        "type": row[6],
+                        "urls": row[7].split("\n"),
+                        "pid": row[8],
+                    }
+                    for row in rows
+                ]
+                logging.info("Retrieved all jobs")
+                return jobs
+            except Exception as e:
+                logging.error("Error getting all jobs: %s", e)
+                raise
     
         def get_jobs(self, limit=50):
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                SELECT
-                    id, name, status, last_update, format, type, url, pid
-                FROM
-                    jobs
-                ORDER BY last_update DESC LIMIT %s;
-                """,
-                (limit,)  # No need to convert limit to string
-            )
-            rows = []
-            for (
-                job_id,
-                name,
-                status,
-                last_update,
-                format,
-                jobtype,
-                url,
-                pid,
-            ) in cursor.fetchall():
-                rows.append(
-                    {
-                        "id": job_id,
-                        "name": name,
-                        "status": STATUS_NAME[status],
-                        "format": format,
-                        "last_update": JobsDB.convert_datetime_to_tz(last_update),
-                        "type": jobtype,
-                        "urls": url.split("\n"),
-                        "pid": pid,
-                    }
+            logging.info("Getting jobs, limit=%s", limit)
+            try:
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    """
+                    SELECT
+                        id, name, status, last_update, format, type, url, pid
+                    FROM
+                        jobs
+                    ORDER BY last_update DESC LIMIT %s;
+                    """,
+                    (limit,)
                 )
-            return rows
-    
+                rows = cursor.fetchall()
+                jobs = [
+                    {
+                        "id": row[0],
+                        "name": row[1],
+                        "status": STATUS_NAME[row[2]],
+                        "format": row[3],
+                        "last_update": JobsDB.convert_datetime_to_tz(row[4]),
+                        "type": row[5],
+                        "urls": row[6].split("\n"),
+                        "pid": row[7],
+                    }
+                    for row in rows
+                ]
+                logging.info("Retrieved jobs")
+                return jobs
+            except Exception as e:
+                logging.error("Error getting jobs: %s", e)
+                raise
+       
