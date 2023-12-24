@@ -503,16 +503,20 @@ class JobsDB:
         conn.close()
     @staticmethod
     def convert_datetime_to_tz(dt):
-        # Check if the data is a valid datetime string
-        try:
-            datetime.datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
-            dt = datetime.datetime.strptime("{} +0000".format(dt), "%Y-%m-%d %H:%M:%S %z")
+        if isinstance(dt, datetime.datetime):
+            # If dt is already a datetime object, just convert the timezone
             return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            logging.error("Invalid datetime format: %s", dt)
-            # Return None or a default value if the format is not correct
+        elif isinstance(dt, str):
+            # If dt is a string, parse it into a datetime object
+            try:
+                dt = datetime.datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
+                return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                logging.error("Invalid datetime format: %s", dt)
+                return None
+        else:
+            logging.error("Unsupported type for datetime conversion: %s", type(dt))
             return None
-
 
 
     @staticmethod
