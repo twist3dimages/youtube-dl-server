@@ -15,7 +15,7 @@ RUN npm run build
 
 FROM python:alpine3.18 as wheels
 
-RUN apk add --no-cache g++ gcc musl-dev python3-dev postgresql-dev
+RUN apk add --no-cache g++ gcc musl-dev python3-dev postgresql-dev postgresql-client
 
 RUN pip install --upgrade --no-cache-dir pip && pip wheel --no-cache-dir --no-deps --wheel-dir /out/wheels brotli pycryptodomex websockets pyyaml psycopg2
 RUN pip install --upgrade pip && pip install --no-cache-dir -r /usr/src/app/requirements.txt
