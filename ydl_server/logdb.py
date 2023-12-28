@@ -412,25 +412,46 @@
 #                 }
 #             )
 #         return rows
-import mysql.connector
-import re
-import datetime
 import os
-import logging
+import psycopg2
+import mysql.connector
+import sqlite3
 from ydl_server.config import app_config
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Constants
 STATUS_NAME = ["Running", "Completed", "Failed", "Pending", "Aborted"]
 
 # Database connection parameters from Docker environment variables
+DB_TYPE = os.environ.get('DB_TYPE', 'sqlite')
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
 DB_PORT = os.environ.get('DB_PORT', 3306)
 DB_NAME = os.environ.get('DB_NAME', 'your_database_name')
 DB_USER = os.environ.get('DB_USER', 'your_database_user')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'your_database_password')
+
+# Database connection function
+def get_db_connection():
+    if DB_TYPE == 'postgres':
+        return psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+    elif DB_TYPE == 'mysql':
+        return mysql.connector.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+    else:  # Default to SQLite
+        return sqlite3.connect(
+            "file://%s" % app_config["ydl_server"].get("metadata_db_path"), uri=True
+        )
+
 
 # MariaDB connection
 def get_db_connection():
